@@ -11,7 +11,7 @@ export default async function AppLayout({
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Nav username={profile.username} points={profile.points} />
-      <div className="flex-1 overflow-x-hidden">{children}</div>
+      <div className="flex-1 overflow-x-hidden pb-24 md:pb-0">{children}</div>
     </div>
   );
 }
