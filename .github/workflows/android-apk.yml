@@ -1,0 +1,65 @@
+name: Build Android APK
+
+# Gera um APK do app (casca Capacitor que abre o site do Vercel).
+# Roda automaticamente quando os arquivos de build mudam, ou manualmente
+# pelo botao "Run workflow" na aba Actions do GitHub.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "capacitor.config.ts"
+      - "capacitor-www/**"
+      - "assets/**"
+      - ".github/workflows/android-apk.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Java (JDK 21 exigido pelo Capacitor 7)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instala plataforma e build-tools do Android
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Instala o Capacitor
+        run: npm install -D @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor/assets@^3
+
+      - name: Adiciona a plataforma Android
+        run: npx cap add android
+
+      - name: Gera os icones do app (best-effort)
+        run: npx capacitor-assets generate --android || echo "Pulando geracao de icones; usando o padrao."
+
+      - name: Sincroniza a configuracao com o projeto Android
+        run: npx cap sync android
+
+      - name: Compila o APK de debug
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Publica o APK como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nani-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
