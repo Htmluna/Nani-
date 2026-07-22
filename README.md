@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nani?! 🎌
 
-## Getting Started
+App para estudar japonês — **hiragana, katakana e kanji** pelos níveis da JLPT
+(N5 a N1) — com flashcards, cronômetro de estudo, competição em grupo e desafios
+de perguntas entre amigos. Feito com **Next.js 16 + Supabase**, pronto para
+deploy no **Vercel**.
 
-First, run the development server:
+## Funcionalidades
+
+- 🔤 **Aprender o alfabeto** — hiragana e katakana completos (gojūon, dakuten,
+  handakuten e combinações), com leitura em romaji e pronúncia por voz.
+- 🎴 **Flashcards** — repetição espaçada (caixas de Leitner) para kana e
+  vocabulário JLPT. Cada acerto vale pontos.
+- 🏯 **Níveis JLPT** — do N5 ao N1, com vocabulário de amostra e escolha do seu
+  nível atual.
+- ⏱️ **Cronômetro de estudo** — registra automaticamente o tempo estudado.
+- 🏆 **Competição** — crie/entre em grupos e veja quem estudou por mais tempo.
+- ❓ **Perguntas** — desafie um amigo; se ele acertar, os dois ganham pontos.
+
+## Rodando localmente
+
+### 1. Pré-requisitos
+- Node.js 18+ (recomendado 20/22)
+- Uma conta no [Supabase](https://supabase.com) (grátis)
+
+### 2. Configurar o Supabase
+1. Crie um novo projeto no painel do Supabase.
+2. Vá em **SQL Editor > New query**, cole todo o conteúdo de
+   [`supabase/schema.sql`](supabase/schema.sql) e clique em **Run**.
+3. Em **Project Settings > API**, copie a **Project URL** e a **anon public key**.
+4. (Opcional, recomendado pra começar) Em **Authentication > Providers > Email**,
+   desative "Confirm email" para poder logar sem confirmar o e-mail durante os
+   testes.
+
+### 3. Variáveis de ambiente
+Copie o exemplo e preencha com seus valores:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Instalar e rodar
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+Abra http://localhost:3000, crie uma conta e comece a estudar.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy no Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Suba este projeto para um repositório no GitHub.
+2. No [Vercel](https://vercel.com), clique em **New Project** e importe o repo.
+3. Em **Environment Variables**, adicione `NEXT_PUBLIC_SUPABASE_URL` e
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY` com os mesmos valores do `.env.local`.
+4. Clique em **Deploy**.
+5. No Supabase, em **Authentication > URL Configuration**, adicione a URL do
+   Vercel (ex.: `https://seu-app.vercel.app`) em **Site URL** / **Redirect URLs**.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estrutura
 
-## Deploy on Vercel
+```
+src/
+  app/
+    (app)/              # área autenticada (nav + páginas)
+      painel/           # dashboard
+      aprender/         # hiragana e katakana
+      flashcards/       # treino com repetição espaçada
+      jlpt/             # níveis e vocabulário
+      competicao/       # grupos e ranking
+      perguntas/        # desafios entre usuários
+    login/              # autenticação
+  components/           # componentes de UI (client)
+  data/                 # kana, vocabulário JLPT e decks
+  lib/                  # clientes Supabase, auth, helpers
+supabase/schema.sql     # schema do banco (rode no Supabase)
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Como expandir
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Vocabulário JLPT**: ~8.100 palavras (N5–N1) em
+  [`src/data/jlpt/`](src/data/jlpt/), com significados em **inglês**
+  (fonte: [open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks),
+  baseada nas listas oficiais pré-2010). Para traduzir ao português ou trocar a
+  fonte, edite os arquivos `N5.json`…`N1.json`.
+- **Sobre "todas as palavras da prova"**: a JLPT não publica lista oficial desde
+  2010; estas são as listas de referência da comunidade que os apps usam.
+- **Ordem de estudo dos kana por dificuldade** ou **traçado dos caracteres**:
+  bons próximos passos.
+- **Notificações de perguntas recebidas**: dá pra usar Supabase Realtime.

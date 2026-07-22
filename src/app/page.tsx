@@ -1,65 +1,54 @@
-import Image from "next/image";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 
-export default function Home() {
+const features = [
+  { emoji: "あ", title: "Alfabetos", desc: "Aprenda cada letra de hiragana e katakana, uma a uma." },
+  { emoji: "🎴", title: "Flashcards", desc: "Revisão espaçada para fixar kana, vocabulário e kanji." },
+  { emoji: "🏯", title: "Níveis JLPT", desc: "Do N5 ao N1, no seu ritmo, com metas claras." },
+  { emoji: "⏱️", title: "Competição", desc: "Veja quem estuda por mais tempo no seu grupo." },
+  { emoji: "❓", title: "Desafios", desc: "Mande perguntas para amigos e ganhem pontos juntos." },
+  { emoji: "🏆", title: "Recompensas", desc: "Some pontos, mantenha o streak e suba no ranking." },
+];
+
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main className="mx-auto max-w-5xl px-6 py-16">
+      <section className="text-center">
+        <div className="jp text-6xl font-bold text-[var(--primary)]">日本語</div>
+        <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
+          Nani?!
+        </h1>
+        <p className="mx-auto mt-4 max-w-xl text-lg text-[var(--muted)]">
+          Estude japonês — hiragana, katakana e kanji pelos níveis da JLPT — com
+          flashcards, metas e uma competição amigável com quem você quiser.
+        </p>
+        <div className="mt-8 flex justify-center gap-3">
+          <Link
+            href={user ? "/painel" : "/login"}
+            className="rounded-lg bg-[var(--primary)] px-6 py-3 font-semibold text-[var(--primary-foreground)] transition hover:opacity-90"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            {user ? "Ir para o painel" : "Começar agora"}
+          </Link>
         </div>
-      </main>
-    </div>
+      </section>
+
+      <section className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {features.map((f) => (
+          <div
+            key={f.title}
+            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6"
+          >
+            <div className="jp text-3xl">{f.emoji}</div>
+            <h3 className="mt-3 font-semibold">{f.title}</h3>
+            <p className="mt-1 text-sm text-[var(--muted)]">{f.desc}</p>
+          </div>
+        ))}
+      </section>
+    </main>
   );
 }
