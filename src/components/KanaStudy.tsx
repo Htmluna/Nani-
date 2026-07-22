@@ -37,6 +37,38 @@ function speak(kana: string) {
   window.speechSynthesis.speak(u);
 }
 
+function KanaCard({
+  title,
+  selected,
+}: {
+  title: string;
+  selected: KanaChar;
+}) {
+  return (
+    <>
+      <div className="text-xs uppercase tracking-wide text-[var(--muted)]">
+        {title} · {groupLabels[selected.group] ?? selected.group}
+      </div>
+      <div className="jp mt-3 text-8xl leading-none">{selected.kana}</div>
+      <div className="mt-3 text-2xl font-bold text-[var(--primary)]">
+        {selected.romaji}
+      </div>
+      <p className="mt-3 text-sm text-[var(--muted)]">
+        {pronunciaPt(selected.romaji)}
+      </p>
+      <button
+        onClick={() => speak(selected.kana)}
+        className="mt-4 w-full rounded-lg bg-[var(--accent)] py-2 text-sm font-semibold text-white transition hover:opacity-90"
+      >
+        🔊 Ouvir pronúncia
+      </button>
+      <p className="mt-3 text-xs text-[var(--muted)]">
+        A pronúncia usa a voz japonesa do seu navegador (se disponível).
+      </p>
+    </>
+  );
+}
+
 export default function KanaStudy({
   title,
   sections,
@@ -47,6 +79,8 @@ export default function KanaStudy({
   const [selected, setSelected] = useState<KanaChar | null>(
     sections[0]?.chars[0] ?? null
   );
+  // No mobile o card vira um bottom sheet que só abre ao tocar numa letra.
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
@@ -62,6 +96,7 @@ export default function KanaStudy({
                   key={c.kana}
                   onClick={() => {
                     setSelected(c);
+                    setSheetOpen(true);
                     speak(c.kana);
                   }}
                   className={`flex aspect-square flex-col items-center justify-center rounded-xl border transition ${
@@ -81,30 +116,33 @@ export default function KanaStudy({
         ))}
       </div>
 
+      {/* Desktop: barra lateral fixa */}
       {selected && (
-        <aside className="lg:sticky lg:top-8 lg:h-fit">
+        <aside className="hidden lg:sticky lg:top-8 lg:block lg:h-fit">
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-center">
-            <div className="text-xs uppercase tracking-wide text-[var(--muted)]">
-              {title} · {groupLabels[selected.group] ?? selected.group}
-            </div>
-            <div className="jp mt-3 text-8xl leading-none">{selected.kana}</div>
-            <div className="mt-3 text-2xl font-bold text-[var(--primary)]">
-              {selected.romaji}
-            </div>
-            <p className="mt-3 text-sm text-[var(--muted)]">
-              {pronunciaPt(selected.romaji)}
-            </p>
-            <button
-              onClick={() => speak(selected.kana)}
-              className="mt-4 w-full rounded-lg bg-[var(--accent)] py-2 text-sm font-semibold text-white transition hover:opacity-90"
-            >
-              🔊 Ouvir pronúncia
-            </button>
-            <p className="mt-3 text-xs text-[var(--muted)]">
-              A pronúncia usa a voz japonesa do seu navegador (se disponível).
-            </p>
+            <KanaCard title={title} selected={selected} />
           </div>
         </aside>
+      )}
+
+      {/* Mobile: bottom sheet sobreposto ao conteúdo */}
+      {selected && sheetOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setSheetOpen(false)}
+          />
+          <div className="absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-[var(--border)] bg-[var(--card)] p-6 pb-8 text-center shadow-2xl">
+            <button
+              onClick={() => setSheetOpen(false)}
+              aria-label="Fechar"
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted)] transition hover:bg-[var(--border)]"
+            >
+              ✕
+            </button>
+            <KanaCard title={title} selected={selected} />
+          </div>
+        </div>
       )}
     </div>
   );
