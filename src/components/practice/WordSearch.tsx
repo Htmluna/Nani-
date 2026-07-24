@@ -100,24 +100,6 @@ function buildGrid(words: Word[]): Grid | null {
   return { size, cells, placed };
 }
 
-function lineBetween(a: string, b: string): string[] | null {
-  const [r1, c1] = a.split("-").map(Number);
-  const [r2, c2] = b.split("-").map(Number);
-  if (r1 === r2) {
-    const step = c2 >= c1 ? 1 : -1;
-    const out: string[] = [];
-    for (let c = c1; c !== c2 + step; c += step) out.push(`${r1}-${c}`);
-    return out;
-  }
-  if (c1 === c2) {
-    const step = r2 >= r1 ? 1 : -1;
-    const out: string[] = [];
-    for (let r = r1; r !== r2 + step; r += step) out.push(`${r}-${c1}`);
-    return out;
-  }
-  return null; // não é linha reta horizontal/vertical
-}
-
 function sameLine(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
   const fwd = a.every((x, i) => x === b[i]);
@@ -131,13 +113,14 @@ export default function WordSearch({ words }: { words: Word[] }) {
   const [grid, setGrid] = useState<Grid | null>(null);
   const [found, setFound] = useState<Set<string>>(new Set()); // hiragana das achadas
   const [foundCells, setFoundCells] = useState<Set<string>>(new Set());
-  const [start, setStart] = useState<string | null>(null);
+  // Caminho sendo montado (sílabas tocadas em sequência).
+  const [sel, setSel] = useState<string[]>([]);
 
   function regenerate() {
     setGrid(buildGrid(words));
     setFound(new Set());
     setFoundCells(new Set());
-    setStart(null);
+    setSel([]);
   }
 
   useEffect(() => {
@@ -154,31 +137,52 @@ export default function WordSearch({ words }: { words: Word[] }) {
     [grid, found]
   );
 
+  // Monta o caminho tocando as sílabas em sequência (horizontal ou vertical).
+  // Cada toque tenta estender a linha atual; se não der, recomeça na sílaba
+  // tocada. Sempre que o caminho formar uma palavra da lista, ela é marcada.
+  function nextSelection(prev: string[], key: string): string[] {
+    if (prev.length === 0) return [key];
+    if (prev.includes(key)) {
+      // Tocar de novo na última desfaz; em qualquer outra já usada, recomeça.
+      if (prev[prev.length - 1] === key) return prev.slice(0, -1);
+      return [key];
+    }
+    const [lr, lc] = prev[prev.length - 1].split("-").map(Number);
+    const [kr, kc] = key.split("-").map(Number);
+    const dr = kr - lr;
+    const dc = kc - lc;
+    // Precisa ser vizinha na horizontal ou vertical (passo de 1).
+    const adjacent =
+      (Math.abs(dr) === 1 && dc === 0) || (Math.abs(dc) === 1 && dr === 0);
+    if (!adjacent) return [key];
+    if (prev.length === 1) return [...prev, key];
+    // A partir da 3ª, precisa manter a mesma direção.
+    const [pr, pc] = prev[0].split("-").map(Number);
+    const [sr, sc] = prev[1].split("-").map(Number);
+    if (Math.sign(dr) === Math.sign(sr - pr) && Math.sign(dc) === Math.sign(sc - pc)) {
+      return [...prev, key];
+    }
+    return [key];
+  }
+
   function tapCell(key: string) {
     if (!grid) return;
-    if (start === null) {
-      setStart(key);
-      return;
-    }
-    if (start === key) {
-      setStart(null);
-      return;
-    }
-    const line = lineBetween(start, key);
-    setStart(null);
-    if (!line) return;
-    for (const p of grid.placed) {
-      if (found.has(p.word.hiragana)) continue;
-      if (sameLine(line, p.cells)) {
-        setFound((f) => new Set(f).add(p.word.hiragana));
-        setFoundCells((fc) => {
-          const n = new Set(fc);
-          for (const c of p.cells) n.add(c);
-          return n;
-        });
-        awardPoints(1);
-        break;
-      }
+    const next = nextSelection(sel, key);
+    // Verifica se o caminho atual forma alguma palavra ainda não achada.
+    const match = grid.placed.find(
+      (p) => !found.has(p.word.hiragana) && sameLine(next, p.cells)
+    );
+    if (match) {
+      setFound((f) => new Set(f).add(match.word.hiragana));
+      setFoundCells((fc) => {
+        const n = new Set(fc);
+        for (const c of match.cells) n.add(c);
+        return n;
+      });
+      awardPoints(1);
+      setSel([]);
+    } else {
+      setSel(next);
     }
   }
 
@@ -217,7 +221,7 @@ export default function WordSearch({ words }: { words: Word[] }) {
               row.map((kana, c) => {
                 const key = `${r}-${c}`;
                 const isFound = foundCells.has(key);
-                const isStart = start === key;
+                const isSel = sel.includes(key);
                 return (
                   <button
                     key={key}
@@ -225,8 +229,8 @@ export default function WordSearch({ words }: { words: Word[] }) {
                     className={`jp flex aspect-square items-center justify-center rounded-md border text-base transition sm:text-xl ${
                       isFound
                         ? "border-green-500 bg-green-500/20 font-semibold"
-                        : isStart
-                        ? "border-[var(--primary)] bg-[var(--primary)]/20"
+                        : isSel
+                        ? "border-[var(--primary)] bg-[var(--primary)]/20 font-semibold"
                         : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)]"
                     }`}
                   >
@@ -237,8 +241,8 @@ export default function WordSearch({ words }: { words: Word[] }) {
             )}
           </div>
           <p className="mt-2 text-xs text-[var(--muted)]">
-            Toque na primeira e na última sílaba de uma palavra (na horizontal ou
-            vertical).
+            Toque nas sílabas em sequência (na horizontal ou vertical) para
+            formar a palavra. Toque na última de novo para desfazer.
           </p>
         </div>
 
