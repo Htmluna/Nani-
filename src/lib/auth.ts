@@ -14,15 +14,18 @@ export interface Profile {
   taught_groups: string[];
 }
 
-const SELECT =
-  "id, username, jlpt_level, points, streak, show_romaji, show_furigana, taught_groups";
-
-// Normaliza valores que podem vir nulos de perfis antigos.
-function normalize(row: Record<string, unknown>): Profile {
-  const p = row as Partial<Profile>;
+// Usamos "*" (e não a lista de colunas) de propósito: assim, se o banco ainda
+// não tiver as colunas novas (migração não aplicada), a query NÃO falha — só
+// vêm menos campos, e o normalize preenche os padrões.
+function normalize(
+  row: Record<string, unknown> | null,
+  fallbackId: string,
+  fallbackUsername: string
+): Profile {
+  const p = (row ?? {}) as Partial<Profile>;
   return {
-    id: p.id as string,
-    username: p.username as string,
+    id: (p.id as string) ?? fallbackId,
+    username: (p.username as string) ?? fallbackUsername,
     jlpt_level: (p.jlpt_level ?? "N5") as Profile["jlpt_level"],
     points: (p.points as number) ?? 0,
     streak: (p.streak as number) ?? 0,
@@ -41,22 +44,23 @@ export async function requireProfile(): Promise<Profile> {
 
   if (!user) redirect("/login");
 
+  const username = user.email?.split("@")[0] ?? "usuario";
+
   const { data: profile } = await supabase
     .from("profiles")
-    .select(SELECT)
+    .select("*")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   // Caso o trigger ainda não tenha criado o perfil, cria na hora.
   if (!profile) {
-    const username = user.email?.split("@")[0] ?? "usuario";
     const { data: created } = await supabase
       .from("profiles")
       .insert({ id: user.id, username })
-      .select(SELECT)
-      .single();
-    return normalize(created as Record<string, unknown>);
+      .select("*")
+      .maybeSingle();
+    return normalize(created ?? null, user.id, username);
   }
 
-  return normalize(profile as Record<string, unknown>);
+  return normalize(profile as Record<string, unknown>, user.id, username);
 }
