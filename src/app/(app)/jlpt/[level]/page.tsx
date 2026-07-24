@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import StudyTimer from "@/components/StudyTimer";
+import JpWord from "@/components/JpWord";
 import {
   jlptVocab,
   jlptDescriptions,
@@ -62,7 +63,9 @@ export default async function LevelPage({
                 key={`${v.word}-${start + i}`}
                 className="border-t border-[var(--border)] bg-[var(--card)]"
               >
-                <td className="jp px-4 py-3 text-xl">{v.word}</td>
+                <td className="px-4 py-3 text-xl">
+                  <JpWord kana={v.reading} kanji={v.word} className="text-xl" />
+                </td>
                 <td className="jp px-4 py-3 text-[var(--muted)]">
                   {v.reading}
                 </td>

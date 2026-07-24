@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { KanaChar } from "@/data/kana";
 import { groupLabels } from "@/data/kana";
+import { useSettings } from "@/components/SettingsProvider";
 
 // Aproximação da pronúncia em português para ajudar quem está começando.
 function pronunciaPt(romaji: string): string {
@@ -40,9 +41,11 @@ function speak(kana: string) {
 function KanaCard({
   title,
   selected,
+  showRomaji,
 }: {
   title: string;
   selected: KanaChar;
+  showRomaji: boolean;
 }) {
   return (
     <>
@@ -50,12 +53,16 @@ function KanaCard({
         {title} · {groupLabels[selected.group] ?? selected.group}
       </div>
       <div className="jp mt-3 text-8xl leading-none">{selected.kana}</div>
-      <div className="mt-3 text-2xl font-bold text-[var(--primary)]">
-        {selected.romaji}
-      </div>
-      <p className="mt-3 text-sm text-[var(--muted)]">
-        {pronunciaPt(selected.romaji)}
-      </p>
+      {showRomaji && (
+        <>
+          <div className="mt-3 text-2xl font-bold text-[var(--primary)]">
+            {selected.romaji}
+          </div>
+          <p className="mt-3 text-sm text-[var(--muted)]">
+            {pronunciaPt(selected.romaji)}
+          </p>
+        </>
+      )}
       <button
         onClick={() => speak(selected.kana)}
         className="mt-4 w-full rounded-lg bg-[var(--accent)] py-2 text-sm font-semibold text-white transition hover:opacity-90"
@@ -76,6 +83,7 @@ export default function KanaStudy({
   title: string;
   sections: { key: string; label: string; chars: KanaChar[] }[];
 }) {
+  const { showRomaji } = useSettings();
   const [selected, setSelected] = useState<KanaChar | null>(
     sections[0]?.chars[0] ?? null
   );
@@ -106,9 +114,11 @@ export default function KanaStudy({
                   }`}
                 >
                   <span className="jp text-2xl">{c.kana}</span>
-                  <span className="text-[10px] text-[var(--muted)]">
-                    {c.romaji}
-                  </span>
+                  {showRomaji && (
+                    <span className="text-[10px] text-[var(--muted)]">
+                      {c.romaji}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -120,7 +130,7 @@ export default function KanaStudy({
       {selected && (
         <aside className="hidden lg:sticky lg:top-8 lg:block lg:h-fit">
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-center">
-            <KanaCard title={title} selected={selected} />
+            <KanaCard title={title} selected={selected} showRomaji={showRomaji} />
           </div>
         </aside>
       )}
@@ -140,7 +150,7 @@ export default function KanaStudy({
             >
               ✕
             </button>
-            <KanaCard title={title} selected={selected} />
+            <KanaCard title={title} selected={selected} showRomaji={showRomaji} />
           </div>
         </div>
       )}

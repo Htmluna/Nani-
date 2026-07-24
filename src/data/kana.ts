@@ -272,3 +272,34 @@ export const groupLabels: Record<string, string> = {
   p: "Linha P (handakuten)",
   combos: "Combinações (yōon)",
 };
+
+// Ordem em que as famílias são ensinadas (método uma-por-dia).
+export const familyOrder: string[] = [
+  "vogais", "k", "s", "t", "n", "h", "m", "y", "r", "w",
+  "g", "z", "d", "b", "p", "combos",
+];
+
+const allHiragana = [...hiraganaBase, ...hiraganaDakuten, ...hiraganaCombo];
+
+// Primeiros kana (em hiragana) de uma família, para amostra no seletor.
+export function familySample(group: string, limit = 5): string {
+  return allHiragana
+    .filter((c) => c.group === group)
+    .slice(0, limit)
+    .map((c) => c.kana)
+    .join(" ");
+}
+
+// Converte uma string de hiragana para katakana (deslocamento de codepoint).
+export function toKatakana(hira: string): string {
+  let out = "";
+  for (const ch of hira) {
+    const code = ch.codePointAt(0);
+    if (code !== undefined && code >= 0x3041 && code <= 0x3096) {
+      out += String.fromCodePoint(code + 0x60);
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}

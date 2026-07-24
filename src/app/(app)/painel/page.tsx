@@ -39,9 +39,11 @@ export default async function PainelPage() {
 
   const shortcuts = [
     { href: "/aprender", title: "Aprender o alfabeto", desc: "Hiragana e katakana, letra por letra", icon: "あ" },
+    { href: "/praticar", title: "Praticar", desc: "Formar palavras, ditado, caça-palavras e frases", icon: "🧩" },
     { href: "/flashcards", title: "Revisar flashcards", desc: "Fixe o que já estudou", icon: "🎴" },
     { href: "/jlpt", title: "Estudar JLPT", desc: "Vocabulário do seu nível", icon: "🏯" },
     { href: "/competicao", title: "Ver ranking", desc: "Como está sua competição", icon: "🏆" },
+    { href: "/config", title: "Configurações", desc: "Romaji e furigana (leitura dos kanji)", icon: "⚙️" },
   ];
 
   return (

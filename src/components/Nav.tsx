@@ -7,6 +7,7 @@ import { signOut } from "@/app/login/actions";
 const links = [
   { href: "/painel", label: "Painel", icon: "🏠" },
   { href: "/aprender", label: "Aprender", icon: "あ" },
+  { href: "/praticar", label: "Praticar", icon: "🧩" },
   { href: "/flashcards", label: "Flashcards", icon: "🎴" },
   { href: "/jlpt", label: "Níveis JLPT", icon: "🏯" },
   { href: "/competicao", label: "Competição", icon: "🏆" },
@@ -56,6 +57,18 @@ export default function Nav({
           <div className="font-medium">{username}</div>
           <div className="text-[var(--muted)]">🏆 {points} pts</div>
         </div>
+        <Link
+          href="/config"
+          aria-label="Configurações"
+          className={`hidden flex-1 items-center justify-center gap-0.5 rounded-lg px-2 py-2 text-sm transition md:flex md:flex-none md:flex-row md:justify-start md:gap-2 md:px-3 ${
+            pathname === "/config"
+              ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+              : "hover:bg-[var(--background)]"
+          }`}
+        >
+          <span className="text-2xl md:text-base">⚙️</span>
+          <span className="hidden md:inline">Configurações</span>
+        </Link>
         <form action={signOut} className="flex">
           <button
             type="submit"

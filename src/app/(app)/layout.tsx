@@ -1,4 +1,5 @@
 import Nav from "@/components/Nav";
+import { SettingsProvider } from "@/components/SettingsProvider";
 import { requireProfile } from "@/lib/auth";
 
 export default async function AppLayout({
@@ -9,9 +10,16 @@ export default async function AppLayout({
   const profile = await requireProfile();
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
-      <Nav username={profile.username} points={profile.points} />
-      <div className="flex-1 overflow-x-hidden pb-24 md:pb-0">{children}</div>
-    </div>
+    <SettingsProvider
+      initial={{
+        showRomaji: profile.show_romaji,
+        showFurigana: profile.show_furigana,
+      }}
+    >
+      <div className="flex min-h-screen flex-col md:flex-row">
+        <Nav username={profile.username} points={profile.points} />
+        <div className="flex-1 overflow-x-hidden pb-24 md:pb-0">{children}</div>
+      </div>
+    </SettingsProvider>
   );
 }

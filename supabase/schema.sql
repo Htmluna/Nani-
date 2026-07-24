@@ -16,6 +16,13 @@ create table if not exists public.profiles (
   created_at  timestamptz not null default now()
 );
 
+-- Preferências de exibição e progresso do método "uma família por dia".
+-- (Colunas adicionadas depois; add column if not exists é seguro de reexecutar.)
+alter table public.profiles
+  add column if not exists show_romaji   boolean not null default true,
+  add column if not exists show_furigana boolean not null default true,
+  add column if not exists taught_groups text[]  not null default array['vogais']::text[];
+
 alter table public.profiles enable row level security;
 
 drop policy if exists "perfis visíveis a todos autenticados" on public.profiles;

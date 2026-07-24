@@ -9,6 +9,14 @@ deploy no **Vercel**.
 
 - 🔤 **Aprender o alfabeto** — hiragana e katakana completos (gojūon, dakuten,
   handakuten e combinações), com leitura em romaji e pronúncia por voz.
+- 🧩 **Praticar** — atividades que combinam só as famílias de letras que você já
+  ensinou (método "uma família por dia"): **formar palavras** (veja a palavra em
+  kanji/hiragana/katakana e monte com as sílabas), **ditado** (ouça e descubra as
+  letras), **caça-palavras** e **formar frases**. Você escolhe quais famílias já
+  foram ensinadas e as atividades vão liberando palavras conforme o progresso.
+- ⚙️ **Configurações** — ligue/desligue o **furigana** (leitura em hiragana sobre
+  os kanji) e o **romaji** (leitura em letras). As preferências ficam salvas na
+  sua conta.
 - 🎴 **Flashcards** — repetição espaçada (caixas de Leitner) para kana e
   vocabulário JLPT. Cada acerto vale pontos.
 - 🏯 **Níveis JLPT** — do N5 ao N1, com vocabulário de amostra e escolha do seu
@@ -27,6 +35,11 @@ deploy no **Vercel**.
 1. Crie um novo projeto no painel do Supabase.
 2. Vá em **SQL Editor > New query**, cole todo o conteúdo de
    [`supabase/schema.sql`](supabase/schema.sql) e clique em **Run**.
+   - Se o seu banco **já existia** antes destas novidades, rode também a
+     migração [`supabase/migrations/2026-07-24_praticar.sql`](supabase/migrations/2026-07-24_praticar.sql)
+     (ela adiciona as colunas de preferências e progresso ao seu perfil). Rodar
+     o `schema.sql` inteiro de novo também funciona — as adições são seguras de
+     reexecutar.
 3. Em **Project Settings > API**, copie a **Project URL** e a **anon public key**.
 4. (Opcional, recomendado pra começar) Em **Authentication > Providers > Email**,
    desative "Confirm email" para poder logar sem confirmar o e-mail durante os
@@ -71,15 +84,19 @@ src/
     (app)/              # área autenticada (nav + páginas)
       painel/           # dashboard
       aprender/         # hiragana e katakana
+      praticar/         # formar palavras, ditado, caça-palavras, frases
+      config/           # preferências (furigana / romaji)
       flashcards/       # treino com repetição espaçada
       jlpt/             # níveis e vocabulário
       competicao/       # grupos e ranking
       perguntas/        # desafios entre usuários
     login/              # autenticação
   components/           # componentes de UI (client)
-  data/                 # kana, vocabulário JLPT e decks
+    practice/           # componentes das atividades de prática
+  data/                 # kana, palavras, frases, vocabulário JLPT e decks
   lib/                  # clientes Supabase, auth, helpers
 supabase/schema.sql     # schema do banco (rode no Supabase)
+supabase/migrations/    # migrações incrementais para bancos já existentes
 ```
 
 ## Como expandir
