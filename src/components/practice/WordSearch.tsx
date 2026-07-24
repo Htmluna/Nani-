@@ -100,11 +100,24 @@ function buildGrid(words: Word[]): Grid | null {
   return { size, cells, placed };
 }
 
-function sameLine(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false;
-  const fwd = a.every((x, i) => x === b[i]);
-  const rev = a.every((x, i) => x === b[b.length - 1 - i]);
-  return fwd || rev;
+// Todas as células (em ordem) na linha reta entre duas pontas, ou null se elas
+// não estiverem na mesma horizontal/vertical.
+function lineBetween(a: string, b: string): string[] | null {
+  const [r1, c1] = a.split("-").map(Number);
+  const [r2, c2] = b.split("-").map(Number);
+  if (r1 === r2) {
+    const step = c2 >= c1 ? 1 : -1;
+    const out: string[] = [];
+    for (let c = c1; c !== c2 + step; c += step) out.push(`${r1}-${c}`);
+    return out;
+  }
+  if (c1 === c2) {
+    const step = r2 >= r1 ? 1 : -1;
+    const out: string[] = [];
+    for (let r = r1; r !== r2 + step; r += step) out.push(`${r}-${c1}`);
+    return out;
+  }
+  return null;
 }
 
 export default function WordSearch({ words }: { words: Word[] }) {
@@ -137,52 +150,51 @@ export default function WordSearch({ words }: { words: Word[] }) {
     [grid, found]
   );
 
-  // Monta o caminho tocando as sílabas em sequência (horizontal ou vertical).
-  // Cada toque tenta estender a linha atual; se não der, recomeça na sílaba
-  // tocada. Sempre que o caminho formar uma palavra da lista, ela é marcada.
-  function nextSelection(prev: string[], key: string): string[] {
-    if (prev.length === 0) return [key];
-    if (prev.includes(key)) {
-      // Tocar de novo na última desfaz; em qualquer outra já usada, recomeça.
-      if (prev[prev.length - 1] === key) return prev.slice(0, -1);
-      return [key];
-    }
-    const [lr, lc] = prev[prev.length - 1].split("-").map(Number);
-    const [kr, kc] = key.split("-").map(Number);
-    const dr = kr - lr;
-    const dc = kc - lc;
-    // Precisa ser vizinha na horizontal ou vertical (passo de 1).
-    const adjacent =
-      (Math.abs(dr) === 1 && dc === 0) || (Math.abs(dc) === 1 && dr === 0);
-    if (!adjacent) return [key];
-    if (prev.length === 1) return [...prev, key];
-    // A partir da 3ª, precisa manter a mesma direção.
-    const [pr, pc] = prev[0].split("-").map(Number);
-    const [sr, sc] = prev[1].split("-").map(Number);
-    if (Math.sign(dr) === Math.sign(sr - pr) && Math.sign(dc) === Math.sign(sc - pc)) {
-      return [...prev, key];
-    }
-    return [key];
-  }
-
+  // Interação: toque na PRIMEIRA sílaba (vira âncora) e depois na ÚLTIMA. A
+  // linha reta entre as duas é preenchida e destacada; se formar uma palavra
+  // da lista, ela é marcada na hora. Se as duas não estiverem na mesma linha
+  // (nem horizontal nem vertical), a sílaba tocada vira a nova âncora.
   function tapCell(key: string) {
     if (!grid) return;
-    const next = nextSelection(sel, key);
-    // Verifica se o caminho atual forma alguma palavra ainda não achada.
+    // Sem âncora ainda, ou tocou de novo na âncora (cancela): (re)começa.
+    if (sel.length === 0) {
+      setSel([key]);
+      return;
+    }
+    const anchor = sel[0];
+    if (anchor === key) {
+      setSel([]);
+      return;
+    }
+    const line = lineBetween(anchor, key);
+    if (!line) {
+      // Não é uma linha reta com a âncora: essa sílaba vira a nova âncora.
+      setSel([key]);
+      return;
+    }
+    // Lê as sílabas da linha e compara com as palavras (nos dois sentidos).
+    const units = line.map((k) => {
+      const [r, c] = k.split("-").map(Number);
+      return grid.cells[r][c];
+    });
+    const joined = units.join("");
+    const joinedRev = [...units].reverse().join("");
     const match = grid.placed.find(
-      (p) => !found.has(p.word.hiragana) && sameLine(next, p.cells)
+      (p) =>
+        !found.has(p.word.hiragana) &&
+        (p.word.hiragana === joined || p.word.hiragana === joinedRev)
     );
     if (match) {
       setFound((f) => new Set(f).add(match.word.hiragana));
       setFoundCells((fc) => {
         const n = new Set(fc);
-        for (const c of match.cells) n.add(c);
+        for (const c of line) n.add(c);
         return n;
       });
       awardPoints(1);
       setSel([]);
     } else {
-      setSel(next);
+      setSel(line); // mantém a linha destacada para tentar outra ponta
     }
   }
 
@@ -241,8 +253,8 @@ export default function WordSearch({ words }: { words: Word[] }) {
             )}
           </div>
           <p className="mt-2 text-xs text-[var(--muted)]">
-            Toque nas sílabas em sequência (na horizontal ou vertical) para
-            formar a palavra. Toque na última de novo para desfazer.
+            Toque na primeira e depois na última sílaba da palavra (na horizontal
+            ou vertical). Toque na primeira de novo para cancelar.
           </p>
         </div>
 
