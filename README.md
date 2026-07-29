@@ -1,5 +1,7 @@
 # Nani?! 🎌
 
+🇺🇸 [Read in English](README.en.md)
+
 App para estudar japonês — **hiragana, katakana e kanji** pelos níveis da JLPT
 (N5 a N1) — com flashcards, cronômetro de estudo, competição em grupo e desafios
 de perguntas entre amigos. Feito com **Next.js 16 + Supabase**, pronto para
@@ -9,11 +11,19 @@ deploy no **Vercel**.
 
 - 🔤 **Aprender o alfabeto** — hiragana e katakana completos (gojūon, dakuten,
   handakuten e combinações), com leitura em romaji e pronúncia por voz.
-- 🧩 **Praticar** — atividades que combinam só as famílias de letras que você já
-  ensinou (método "uma família por dia"): **formar palavras** (veja a palavra em
-  kanji/hiragana/katakana e monte com as sílabas), **ditado** (ouça e descubra as
-  letras), **caça-palavras** e **formar frases**. Você escolhe quais famílias já
-  foram ensinadas e as atividades vão liberando palavras conforme o progresso.
+- 🧩 **Praticar** — cinco atividades que combinam só as famílias de letras que
+  você já ensinou (método "uma família por dia"):
+  - **Quiz** — múltipla escolha, alternando três tipos de pergunta: significado,
+    leitura (romaji) e escrita (do português para o japonês).
+  - **Formar palavras** — veja a palavra em kanji/hiragana/katakana e monte com
+    as sílabas.
+  - **Ditado** — ouça a palavra e descubra quais sílabas foram usadas.
+  - **Caça-palavras** — ache as palavras escondidas na grade de kana.
+  - **Formar frases** — coloque as palavras na ordem certa.
+- 📈 **Liberação progressiva** — você marca cada família conforme ensina, e as
+  atividades reagem na hora. O progresso fica salvo na conta, com cópia local no
+  aparelho como reserva. As palavras e frases usam uma fila embaralhada: passam
+  por todo o banco antes de repetir.
 - ⚙️ **Configurações** — ligue/desligue o **furigana** (leitura em hiragana sobre
   os kanji) e o **romaji** (leitura em letras). As preferências ficam salvas na
   sua conta.
@@ -84,7 +94,7 @@ src/
     (app)/              # área autenticada (nav + páginas)
       painel/           # dashboard
       aprender/         # hiragana e katakana
-      praticar/         # formar palavras, ditado, caça-palavras, frases
+      praticar/         # quiz, formar palavras, ditado, caça-palavras, frases
       config/           # preferências (furigana / romaji)
       flashcards/       # treino com repetição espaçada
       jlpt/             # níveis e vocabulário
@@ -98,6 +108,20 @@ src/
 supabase/schema.sql     # schema do banco (rode no Supabase)
 supabase/migrations/    # migrações incrementais para bancos já existentes
 ```
+
+## Conteúdo
+
+| Banco | Tamanho | Onde |
+| --- | --- | --- |
+| Kana | 46 básicos + 25 dakuten/handakuten + 33 combinações, por silabário | [`src/data/kana.ts`](src/data/kana.ts) |
+| Palavras da prática | 327, marcadas por família de kana | [`src/data/words.ts`](src/data/words.ts) |
+| Frases da prática | 74, marcadas por família de kana | [`src/data/sentences.ts`](src/data/sentences.ts) |
+| Vocabulário JLPT | ~8.100 palavras (N5–N1), significados em inglês | [`src/data/jlpt/`](src/data/jlpt/) |
+
+Cada palavra é escrita em hiragana e o romaji, as sílabas e as famílias saem
+automaticamente de [`src/data/kana.ts`](src/data/kana.ts) — para adicionar
+vocabulário basta acrescentar uma linha em
+[`src/data/words.ts`](src/data/words.ts), sem marcar nada à mão.
 
 ## Como expandir
 
