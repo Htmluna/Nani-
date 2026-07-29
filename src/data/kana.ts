@@ -87,6 +87,17 @@ export const hiraganaDakuten: KanaChar[] = [
   { kana: "ぽ", romaji: "po", group: "p" },
 ];
 
+// Sílaba especial: o つ pequeno (sokuon) não tem som próprio — ele dobra a
+// consoante seguinte (がっこう = ga-k-kou). Como é um つ menor, contamos ele
+// junto da linha T, então palavras com っ aparecem a partir dela.
+export const hiraganaSpecial: KanaChar[] = [
+  { kana: "っ", romaji: "*", group: "t" },
+];
+
+export const katakanaSpecial: KanaChar[] = [
+  { kana: "ッ", romaji: "*", group: "t" },
+];
+
 export const hiraganaCombo: KanaChar[] = [
   { kana: "きゃ", romaji: "kya", group: "combos" },
   { kana: "きゅ", romaji: "kyu", group: "combos" },

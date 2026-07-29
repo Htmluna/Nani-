@@ -2,11 +2,9 @@ import Link from "next/link";
 import WordSearch from "@/components/practice/WordSearch";
 import StudyTimer from "@/components/StudyTimer";
 import { requireProfile } from "@/lib/auth";
-import { wordsForGroups } from "@/data/words";
 
 export default async function CacaPalavrasPage() {
-  const profile = await requireProfile();
-  const words = wordsForGroups(profile.taught_groups);
+  await requireProfile();
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
@@ -26,7 +24,7 @@ export default async function CacaPalavrasPage() {
         <StudyTimer activity="praticar:caca-palavras" />
       </div>
 
-      <WordSearch words={words} />
+      <WordSearch />
     </div>
   );
 }

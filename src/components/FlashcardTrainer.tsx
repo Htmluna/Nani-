@@ -1,26 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Card } from "@/data/decks";
 import { reviewCard } from "@/app/(app)/flashcards/actions";
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    // embaralhamento determinístico-o-suficiente para uma sessão
-    const j = Math.floor(((i * 9301 + 49297) % 233280) / 233280 * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+import { shuffle } from "@/lib/shuffle";
 
 export default function FlashcardTrainer({ cards }: { cards: Card[] }) {
-  const deck = useMemo(() => shuffle(cards), [cards]);
+  // Embaralha só depois de montar: no servidor a ordem tem que bater com a
+  // renderização inicial, e o sorteio é aleatório.
+  const [deck, setDeck] = useState<Card[]>(cards);
   const [i, setI] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [hits, setHits] = useState(0);
   const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDeck(shuffle(cards));
+    setI(0);
+    setFlipped(false);
+    setHits(0);
+    setDone(false);
+  }, [cards]);
 
   const card = deck[i];
 
@@ -46,6 +48,8 @@ export default function FlashcardTrainer({ cards }: { cards: Card[] }) {
         <div className="mt-6 flex justify-center gap-3">
           <button
             onClick={() => {
+              // Reembaralha, para a repetição não vir na mesma ordem.
+              setDeck(shuffle(deck));
               setI(0);
               setFlipped(false);
               setHits(0);

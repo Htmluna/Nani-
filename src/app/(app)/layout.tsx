@@ -14,6 +14,7 @@ export default async function AppLayout({
       initial={{
         showRomaji: profile.show_romaji,
         showFurigana: profile.show_furigana,
+        taughtGroups: profile.taught_groups,
       }}
     >
       <div className="flex min-h-screen flex-col md:flex-row">

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { segment, romajiOf, type Word } from "@/data/words";
+import { segment, romajiOf, wordsForGroups, type Word } from "@/data/words";
 import { useSettings } from "@/components/SettingsProvider";
 import { awardPoints } from "@/app/(app)/settings-actions";
+import { useShuffledDraw } from "@/lib/shuffle";
 
 interface Placed {
   word: Word;
@@ -22,24 +23,9 @@ const DIRS = [
   [1, 0], // vertical ↓
 ];
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function buildGrid(words: Word[]): Grid | null {
-  // Só palavras de 2 a 5 sílabas entram na caça.
-  const candidates = shuffle(
-    words.filter((w) => {
-      const len = segment(w.hiragana).length;
-      return len >= 2 && len <= 5;
-    })
-  ).slice(0, 6);
-
+// Monta a grade com as palavras já sorteadas (`candidates`); `words` serve só
+// para tirar as sílabas que preenchem os espaços vazios.
+function buildGrid(candidates: Word[], words: Word[]): Grid | null {
   if (candidates.length < 2) return null;
 
   const maxLen = Math.max(...candidates.map((w) => segment(w.hiragana).length));
@@ -120,8 +106,22 @@ function lineBetween(a: string, b: string): string[] | null {
   return null;
 }
 
-export default function WordSearch({ words }: { words: Word[] }) {
-  const { showRomaji } = useSettings();
+const GRID_WORDS = 6;
+
+export default function WordSearch() {
+  const { showRomaji, taughtGroups } = useSettings();
+  const words = useMemo(() => wordsForGroups(taughtGroups), [taughtGroups]);
+  // Só palavras de 2 a 5 sílabas entram na caça.
+  const candidates = useMemo(
+    () =>
+      words.filter((w) => {
+        const len = segment(w.hiragana).length;
+        return len >= 2 && len <= 5;
+      }),
+    [words]
+  );
+  // A fila embaralhada faz cada grade nova usar palavras que ainda não saíram.
+  const { drawMany, reset } = useShuffledDraw(candidates);
   const [mounted, setMounted] = useState(false);
   const [grid, setGrid] = useState<Grid | null>(null);
   const [found, setFound] = useState<Set<string>>(new Set()); // hiragana das achadas
@@ -129,21 +129,23 @@ export default function WordSearch({ words }: { words: Word[] }) {
   // Caminho sendo montado (sílabas tocadas em sequência).
   const [sel, setSel] = useState<string[]>([]);
 
-  function regenerate() {
-    setGrid(buildGrid(words));
+  const regenerate = useCallback(() => {
+    setGrid(buildGrid(drawMany(GRID_WORDS), words));
     setFound(new Set());
     setFoundCells(new Set());
     setSel([]);
-  }
+  }, [drawMany, words]);
 
   useEffect(() => {
-    // Init único no cliente: gera a grade só após montar, para evitar
-    // divergência de hidratação (a geração usa aleatoriedade).
+    // Init no cliente: gera a grade só após montar, para evitar divergência de
+    // hidratação (a geração usa aleatoriedade). Refaz quando as famílias
+    // liberadas mudam.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
-    setGrid(buildGrid(words));
+    reset();
+    regenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [words]);
 
   const allFound = useMemo(
     () => grid != null && found.size === grid.placed.length,

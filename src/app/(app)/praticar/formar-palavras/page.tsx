@@ -2,11 +2,9 @@ import Link from "next/link";
 import ComposeWord from "@/components/practice/ComposeWord";
 import StudyTimer from "@/components/StudyTimer";
 import { requireProfile } from "@/lib/auth";
-import { wordsForGroups } from "@/data/words";
 
 export default async function FormarPalavrasPage() {
-  const profile = await requireProfile();
-  const words = wordsForGroups(profile.taught_groups);
+  await requireProfile();
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
@@ -27,7 +25,7 @@ export default async function FormarPalavrasPage() {
         <StudyTimer activity="praticar:formar-palavras" />
       </div>
 
-      <ComposeWord words={words} />
+      <ComposeWord />
     </div>
   );
 }

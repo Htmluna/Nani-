@@ -21,25 +21,32 @@ export async function updateDisplaySettings(settings: {
     patch.show_furigana = settings.show_furigana;
   if (Object.keys(patch).length === 0) return { ok: true };
 
-  await supabase.from("profiles").update(patch).eq("id", user.id);
+  const { error } = await supabase
+    .from("profiles")
+    .update(patch)
+    .eq("id", user.id);
+  if (error) return { ok: false, error: error.message };
   revalidatePath("/", "layout");
   return { ok: true };
 }
 
 // Define quais famílias de kana já foram ensinadas (método uma-por-dia).
+// Devolve o erro quando a gravação falha (ex.: a coluna taught_groups ainda
+// não existe no banco) — o cliente avisa e guarda a escolha no aparelho.
 export async function updateTaughtGroups(groups: string[]) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { ok: false };
+  if (!user) return { ok: false, error: "sem sessão" };
 
   // Mantém apenas strings, sem duplicatas.
   const clean = [...new Set(groups.filter((g) => typeof g === "string"))];
-  await supabase
+  const { error } = await supabase
     .from("profiles")
     .update({ taught_groups: clean })
     .eq("id", user.id);
+  if (error) return { ok: false, error: error.message };
   revalidatePath("/", "layout");
   return { ok: true };
 }

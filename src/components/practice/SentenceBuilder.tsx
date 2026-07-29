@@ -1,35 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import JpWord from "@/components/JpWord";
 import { useSettings } from "@/components/SettingsProvider";
 import { awardPoints } from "@/app/(app)/settings-actions";
 import { speak } from "@/lib/speak";
-import type { Sentence, SentenceToken } from "@/data/sentences";
+import {
+  sentencesForGroups,
+  type Sentence,
+  type SentenceToken,
+} from "@/data/sentences";
+import { shuffle, useShuffledDraw } from "@/lib/shuffle";
 
 interface Piece {
   id: number;
   token: SentenceToken;
 }
 
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-export default function SentenceBuilder({
-  sentences,
-}: {
-  sentences: Sentence[];
-}) {
-  const { showRomaji } = useSettings();
+export default function SentenceBuilder() {
+  const { showRomaji, taughtGroups } = useSettings();
+  const sentences = useMemo(
+    () => sentencesForGroups(taughtGroups),
+    [taughtGroups]
+  );
+  const { draw, reset } = useShuffledDraw(sentences);
   const [mounted, setMounted] = useState(false);
   const [sentence, setSentence] = useState<Sentence | null>(null);
   const [bank, setBank] = useState<Piece[]>([]);
@@ -39,25 +33,29 @@ export default function SentenceBuilder({
   );
   const [score, setScore] = useState(0);
 
-  function newRound(s: Sentence) {
+  const newRound = useCallback((s: Sentence) => {
     const pieces = s.tokens.map((token, id) => ({ id, token }));
     setSentence(s);
     setBank(shuffle(pieces));
     setBuilt([]);
     setStatus("playing");
-  }
+  }, []);
 
-  function next() {
-    newRound(pick(sentences));
-  }
+  // A fila embaralhada passa por todas as frases antes de repetir.
+  const next = useCallback(() => {
+    const s = draw();
+    if (s) newRound(s);
+  }, [draw, newRound]);
 
   useEffect(() => {
-    // Init único no cliente (evita divergência de hidratação com o sorteio).
+    // Init no cliente (evita divergência de hidratação com o sorteio) e
+    // recomeço quando as famílias liberadas mudam.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
-    newRound(pick(sentences));
+    reset();
+    next();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [sentences]);
 
   function place(p: Piece) {
     if (status === "correct" || !sentence) return;

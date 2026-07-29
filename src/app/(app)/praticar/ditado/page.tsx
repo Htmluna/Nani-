@@ -2,11 +2,9 @@ import Link from "next/link";
 import Dictation from "@/components/practice/Dictation";
 import StudyTimer from "@/components/StudyTimer";
 import { requireProfile } from "@/lib/auth";
-import { wordsForGroups } from "@/data/words";
 
 export default async function DitadoPage() {
-  const profile = await requireProfile();
-  const words = wordsForGroups(profile.taught_groups);
+  await requireProfile();
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
@@ -26,7 +24,7 @@ export default async function DitadoPage() {
         <StudyTimer activity="praticar:ditado" />
       </div>
 
-      <Dictation words={words} />
+      <Dictation />
     </div>
   );
 }

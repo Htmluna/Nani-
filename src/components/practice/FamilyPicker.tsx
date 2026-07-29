@@ -1,21 +1,23 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo } from "react";
 import { familyOrder, familySample, groupLabels } from "@/data/kana";
-import { updateTaughtGroups } from "@/app/(app)/settings-actions";
+import { wordsForGroups } from "@/data/words";
+import { useSettings } from "@/components/SettingsProvider";
 
 // Seletor do progresso: marca quais famílias de kana já foram ensinadas.
 // Como o método é cumulativo (uma família nova por dia), oferecemos também
 // atalhos "liberar a próxima" e "liberar até aqui".
-export default function FamilyPicker({ initial }: { initial: string[] }) {
-  const [taught, setTaught] = useState<Set<string>>(new Set(initial));
-  const [pending, startTransition] = useTransition();
+// O progresso vive no contexto de configurações, então as atividades reagem na
+// hora — sem precisar recarregar a página.
+export default function FamilyPicker() {
+  const { taughtGroups, setTaughtGroups, groupsSave } = useSettings();
+  const taught = useMemo(() => new Set(taughtGroups), [taughtGroups]);
+  const available = useMemo(() => wordsForGroups(taughtGroups), [taughtGroups]);
 
+  // Salva sempre na ordem do método, para a lista ficar legível.
   function persist(next: Set<string>) {
-    setTaught(new Set(next));
-    startTransition(() => {
-      updateTaughtGroups([...next]);
-    });
+    setTaughtGroups(familyOrder.filter((g) => next.has(g)));
   }
 
   function toggle(group: string) {
@@ -47,6 +49,14 @@ export default function FamilyPicker({ initial }: { initial: string[] }) {
 
   return (
     <div>
+      <p className="mb-3 text-sm text-[var(--muted)]">
+        Liberadas:{" "}
+        <span className="font-medium text-[var(--foreground)]">
+          {taughtGroups.map((g) => groupLabels[g] ?? g).join(", ") || "nenhuma"}
+        </span>{" "}
+        · <strong>{available.length}</strong> palavra(s) nas atividades.
+      </p>
+
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <button
           onClick={unlockNext}
@@ -57,9 +67,19 @@ export default function FamilyPicker({ initial }: { initial: string[] }) {
         </button>
         <span className="text-sm text-[var(--muted)]">
           {taught.size} de {familyOrder.length} liberadas
-          {pending && " · salvando…"}
+          {groupsSave === "saving" && " · salvando…"}
+          {groupsSave === "saved" && " · salvo ✓"}
         </span>
       </div>
+
+      {groupsSave === "local" && (
+        <p className="mb-3 rounded-xl border border-amber-500 bg-amber-500/10 px-3 py-2 text-sm">
+          ⚠️ Não consegui salvar na sua conta — o progresso está guardado só
+          neste aparelho. Rode a migração{" "}
+          <code className="text-xs">supabase/migrations/2026-07-24_praticar.sql</code>{" "}
+          no painel do Supabase para sincronizar.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {familyOrder.map((group, i) => {

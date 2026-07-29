@@ -1,9 +1,9 @@
 import Link from "next/link";
-import SentenceBuilder from "@/components/practice/SentenceBuilder";
+import MeaningQuiz from "@/components/practice/MeaningQuiz";
 import StudyTimer from "@/components/StudyTimer";
 import { requireProfile } from "@/lib/auth";
 
-export default async function FrasesPage() {
+export default async function QuizPage() {
   await requireProfile();
 
   return (
@@ -16,15 +16,16 @@ export default async function FrasesPage() {
           >
             ← Praticar
           </Link>
-          <h1 className="text-2xl font-bold">Formar frases 📝</h1>
+          <h1 className="text-2xl font-bold">Quiz ❓</h1>
           <p className="text-sm text-[var(--muted)]">
-            Leia a tradução e coloque as palavras na ordem certa.
+            Múltipla escolha: significado, leitura e escrita das palavras
+            liberadas.
           </p>
         </div>
-        <StudyTimer activity="praticar:frases" />
+        <StudyTimer activity="praticar:quiz" />
       </div>
 
-      <SentenceBuilder />
+      <MeaningQuiz />
     </div>
   );
 }

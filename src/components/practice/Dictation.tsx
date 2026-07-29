@@ -1,31 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { segment, romajiOf, type Word } from "@/data/words";
+import { segment, romajiOf, wordsForGroups, type Word } from "@/data/words";
 import { useSettings } from "@/components/SettingsProvider";
 import { awardPoints } from "@/app/(app)/settings-actions";
 import { speak } from "@/lib/speak";
+import { shuffle, useShuffledDraw } from "@/lib/shuffle";
 
 interface Tile {
   id: number;
   kana: string;
 }
 
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-export default function Dictation({ words }: { words: Word[] }) {
-  const { showRomaji } = useSettings();
+export default function Dictation() {
+  const { showRomaji, taughtGroups } = useSettings();
+  const words = useMemo(() => wordsForGroups(taughtGroups), [taughtGroups]);
+  const { draw, reset } = useShuffledDraw(words);
   const [mounted, setMounted] = useState(false);
   const [word, setWord] = useState<Word | null>(null);
   const [built, setBuilt] = useState<Tile[]>([]);
@@ -43,32 +34,41 @@ export default function Dictation({ words }: { words: Word[] }) {
     return [...set];
   }, [words]);
 
-  function newRound(w: Word) {
-    const units = segment(w.hiragana).map((u) => u.kana);
-    const distractors = shuffle(pool.filter((k) => !units.includes(k))).slice(
-      0,
-      Math.min(4, Math.max(2, pool.length - units.length))
-    );
-    setWord(w);
-    setBuilt([]);
-    setTiles(shuffle([...units, ...distractors]).map((kana, i) => ({ id: i, kana })));
-    setStatus("playing");
-    setHint(false);
-    setReveal(false);
-    speak(w.hiragana);
-  }
+  const newRound = useCallback(
+    (w: Word) => {
+      const units = segment(w.hiragana).map((u) => u.kana);
+      const distractors = shuffle(pool.filter((k) => !units.includes(k))).slice(
+        0,
+        Math.min(4, Math.max(2, pool.length - units.length))
+      );
+      setWord(w);
+      setBuilt([]);
+      setTiles(
+        shuffle([...units, ...distractors]).map((kana, i) => ({ id: i, kana }))
+      );
+      setStatus("playing");
+      setHint(false);
+      setReveal(false);
+      speak(w.hiragana);
+    },
+    [pool]
+  );
 
-  function next() {
-    if (words.length > 0) newRound(pick(words));
-  }
+  // A fila embaralhada garante passar por todas as palavras antes de repetir.
+  const next = useCallback(() => {
+    const w = draw();
+    if (w) newRound(w);
+  }, [draw, newRound]);
 
   useEffect(() => {
-    // Init único no cliente (evita divergência de hidratação com o sorteio).
+    // Init no cliente (evita divergência de hidratação com o sorteio) e
+    // recomeço quando as famílias liberadas mudam.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
-    if (words.length > 0) newRound(pick(words));
+    reset();
+    next();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [words]);
 
   function placeTile(t: Tile) {
     if (status === "correct" || !word) return;

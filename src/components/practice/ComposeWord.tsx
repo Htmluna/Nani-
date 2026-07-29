@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { segment, romajiOf, type Word } from "@/data/words";
+import { segment, romajiOf, wordsForGroups, type Word } from "@/data/words";
 import { toKatakana } from "@/data/kana";
 import { useSettings } from "@/components/SettingsProvider";
 import { awardPoints } from "@/app/(app)/settings-actions";
 import { speak } from "@/lib/speak";
+import { shuffle, useShuffledDraw } from "@/lib/shuffle";
 
 type Script = "kanji" | "hiragana" | "katakana";
 
@@ -16,20 +17,16 @@ interface Tile {
   base: string; // sempre em hiragana (para comparação)
 }
 
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+function toScript(kanaHira: string, s: Script): string {
+  return s === "katakana" ? toKatakana(kanaHira) : kanaHira;
 }
 
-export default function ComposeWord({ words }: { words: Word[] }) {
-  const { showRomaji } = useSettings();
+export default function ComposeWord() {
+  const { showRomaji, taughtGroups } = useSettings();
+  // As palavras vêm do progresso salvo no contexto, então mudar as famílias
+  // liberadas troca o material na hora.
+  const words = useMemo(() => wordsForGroups(taughtGroups), [taughtGroups]);
+  const { draw, reset } = useShuffledDraw(words);
   const [mounted, setMounted] = useState(false);
   const [word, setWord] = useState<Word | null>(null);
   const [script, setScript] = useState<Script>("hiragana");
@@ -48,11 +45,7 @@ export default function ComposeWord({ words }: { words: Word[] }) {
     return [...set];
   }, [words]);
 
-  function toScript(kanaHira: string, s: Script): string {
-    return s === "katakana" ? toKatakana(kanaHira) : kanaHira;
-  }
-
-  function newRound(w: Word, s: Script) {
+  const newRound = useCallback((w: Word, s: Script) => {
     const units = segment(w.hiragana).map((u) => u.kana);
     const distractors = shuffle(pool.filter((k) => !units.includes(k))).slice(
       0,
@@ -69,27 +62,30 @@ export default function ComposeWord({ words }: { words: Word[] }) {
     setBuilt([]);
     setTiles(bank);
     setStatus("playing");
-  }
+  }, [pool]);
 
-  function next() {
-    if (words.length === 0) return;
-    // Começa cada palavra no script que ela tiver (prioriza kanji se houver).
-    const w = pick(words);
-    newRound(w, w.kanji ? "kanji" : "hiragana");
-    speak(w.hiragana);
-  }
+  // Próxima palavra: a fila embaralhada passa por todas antes de repetir.
+  // Cada palavra começa no script que ela tiver (prioriza kanji se houver).
+  const next = useCallback(
+    (withAudio = true) => {
+      const w = draw();
+      if (!w) return;
+      newRound(w, w.kanji ? "kanji" : "hiragana");
+      if (withAudio) speak(w.hiragana);
+    },
+    [draw, newRound]
+  );
 
   useEffect(() => {
-    // Init único no cliente: sorteia a 1ª rodada só após montar, para evitar
-    // divergência de hidratação (o sorteio usa aleatoriedade).
+    // Sorteia a 1ª rodada só depois de montar (o sorteio é aleatório e
+    // divergiria da renderização do servidor). Recomeça também quando as
+    // famílias liberadas mudam.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
-    if (words.length > 0) {
-      const w = pick(words);
-      newRound(w, w.kanji ? "kanji" : "hiragana");
-    }
+    reset();
+    next(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [words]);
 
   function placeTile(t: Tile) {
     if (status !== "playing" || !word) return;
@@ -230,14 +226,14 @@ export default function ComposeWord({ words }: { words: Word[] }) {
       <div className="mt-6 flex justify-center gap-3">
         {status === "correct" ? (
           <button
-            onClick={next}
+            onClick={() => next()}
             className="rounded-lg bg-green-600 px-6 py-2.5 font-semibold text-white"
           >
             Próxima →
           </button>
         ) : (
           <button
-            onClick={next}
+            onClick={() => next()}
             className="rounded-lg border border-[var(--border)] px-6 py-2.5 font-semibold"
           >
             Pular

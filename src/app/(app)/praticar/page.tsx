@@ -1,15 +1,17 @@
 import Link from "next/link";
 import FamilyPicker from "@/components/practice/FamilyPicker";
 import { requireProfile } from "@/lib/auth";
-import { wordsForGroups } from "@/data/words";
-import { groupLabels } from "@/data/kana";
 
 export default async function PraticarPage() {
-  const profile = await requireProfile();
-  const taught = profile.taught_groups;
-  const available = wordsForGroups(taught);
+  await requireProfile();
 
   const modes = [
+    {
+      href: "/praticar/quiz",
+      icon: "❓",
+      title: "Quiz",
+      desc: "Perguntas de múltipla escolha: significado, leitura e escrita.",
+    },
     {
       href: "/praticar/formar-palavras",
       icon: "🧩",
@@ -60,15 +62,8 @@ export default async function PraticarPage() {
           Marque a cada dia a família nova que você ensinou. As atividades vão
           combinando só o que está liberado.
         </p>
-        <p className="mt-1 text-sm text-[var(--muted)]">
-          Liberadas:{" "}
-          <span className="font-medium text-[var(--foreground)]">
-            {taught.map((g) => groupLabels[g] ?? g).join(", ") || "nenhuma"}
-          </span>{" "}
-          · <strong>{available.length}</strong> palavra(s) disponível(is).
-        </p>
         <div className="mt-4">
-          <FamilyPicker initial={taught} />
+          <FamilyPicker />
         </div>
       </section>
 
